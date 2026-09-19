@@ -40,25 +40,24 @@ function AuthPage() {
   useEffect(() => {
     const user = localStorage.getItem("auth_user");
     if (user) navigate({ to: "/dashboard", replace: true });
+    else {
+      localStorage.setItem(
+        "auth_user",
+        JSON.stringify({ email: "demo@local", name: "Demo" }),
+      );
+      navigate({ to: "/dashboard", replace: true });
+    }
   }, [navigate]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const adminEmail = "admin@example.com";
-    const adminPassword = "admin123";
-
-    const isValidAdmin = email === adminEmail && password === adminPassword;
-    setLoading(false);
-
-    if (!isValidAdmin) {
-      return toast.error("Email ou mot de passe incorrect.");
-    }
 
     localStorage.setItem(
       "auth_user",
-      JSON.stringify({ email: adminEmail, name: "Admin" }),
+      JSON.stringify({ email: email || "demo@local", name: "Demo" }),
     );
+    setLoading(false);
     navigate({ to: "/dashboard", replace: true });
   }
 
@@ -89,7 +88,7 @@ function AuthPage() {
           </div>
           <h1 className="text-2xl font-bold">Salle des Fêtes</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Espace Gérant Admin
+            Espace Gérant - Mode Démo
           </p>
         </div>
 
@@ -157,10 +156,10 @@ function AuthPage() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
-                    Connexion...
+                    Ouverture...
                   </span>
                 ) : (
-                  "Se connecter"
+                  "Ouvrir l'espace gérant"
                 )}
               </Button>
             </form>

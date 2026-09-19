@@ -3,13 +3,11 @@ import {
   Outlet,
   redirect,
   Link,
-  useNavigate,
 } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays,
   LineChart,
-  LogOut,
   Moon,
   Sun,
   Crown,
@@ -22,24 +20,15 @@ import { useDarkMode } from "@/routes/__root";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const user = localStorage.getItem("auth_user");
-    if (!user) throw redirect({ to: "/auth" });
+    const user = localStorage.getItem("auth_user") ?? JSON.stringify({ email: "demo@local", name: "Demo" });
     return { user: JSON.parse(user) };
   },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { dark, toggle } = useDarkMode();
-
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    localStorage.removeItem("auth_user");
-    navigate({ to: "/auth", replace: true });
-  }
 
   async function backup() {
     try {
@@ -136,16 +125,6 @@ function AuthenticatedLayout() {
               )}
             </Button>
 
-            {/* Sign out */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-150"
-              onClick={signOut}
-            >
-              <LogOut className="mr-1.5 h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Déconnexion</span>
-            </Button>
           </div>
         </div>
       </header>

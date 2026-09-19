@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -172,6 +172,9 @@ function DashboardPage() {
   const [newEventTime, setNewEventTime] = useState<string>("");
   const [newEventEndTime, setNewEventEndTime] = useState<string>("");
   const [newCookingLabId, setNewCookingLabId] = useState<CookingLabId>("none");
+  const newClientNameRef = useRef<HTMLInputElement | null>(null);
+  const newClientPhoneRef = useRef<HTMLInputElement | null>(null);
+  const newTotalRef = useRef<HTMLInputElement | null>(null);
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [newIdCardNumber, setNewIdCardNumber] = useState("");
@@ -190,6 +193,28 @@ function DashboardPage() {
 
   // ID Card Viewer Modal
   const [viewingIdCard, setViewingIdCard] = useState<Reservation | null>(null);
+
+  const handleScanUpload = (
+    side: "front" | "back",
+    file: File | null,
+  ) => {
+    if (!file || !viewingIdCard) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result ?? "");
+      saveMut.mutate(
+        {
+          ...viewingIdCard,
+          id_card_front_url:
+            side === "front" ? url : viewingIdCard.id_card_front_url ?? null,
+          id_card_back_url:
+            side === "back" ? url : viewingIdCard.id_card_back_url ?? null,
+        } as never,
+      );
+    };
+    reader.readAsDataURL(file);
+  };
 
   const { data, isLoading } = useQuery(
     queryOptions({
@@ -982,11 +1007,13 @@ function DashboardPage() {
                     label: "Scan Recto (Face Avant)",
                     url: viewingIdCard.id_card_front_url,
                     alt: "Scan Recto",
+                    side: "front" as const,
                   },
                   {
                     label: "Scan Verso (Face Arrière)",
                     url: viewingIdCard.id_card_back_url,
                     alt: "Scan Verso",
+                    side: "back" as const,
                   },
                 ].map((scan) => (
                   <div key={scan.label} className="space-y-1.5">
@@ -1012,6 +1039,15 @@ function DashboardPage() {
                         </div>
                       )}
                     </div>
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-input bg-background px-2 py-1.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <span>Importer {scan.side === "front" ? "Recto" : "Verso"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleScanUpload(scan.side, e.target.files?.[0] ?? null)}
+                      />
+                    </label>
                   </div>
                 ))}
               </div>
@@ -1207,6 +1243,7 @@ function DashboardPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Montant total (DA)</Label>
                 <Input
+                  ref={newTotalRef}
                   type="number"
                   min="0"
                   step="0.01"
@@ -1221,6 +1258,7 @@ function DashboardPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Nom client</Label>
                 <Input
+                  ref={newClientNameRef}
                   className="h-9 text-xs"
                   value={newClientName}
                   onChange={(e) => setNewClientName(e.target.value)}
@@ -1229,6 +1267,7 @@ function DashboardPage() {
               <div className="space-y-1.5">
                 <Label className="text-xs">Téléphone client</Label>
                 <Input
+                  ref={newClientPhoneRef}
                   className="h-9 text-xs"
                   value={newClientPhone}
                   onChange={(e) => setNewClientPhone(e.target.value)}
@@ -1283,10 +1322,14 @@ function DashboardPage() {
               <Button
                 className="font-bold shadow-sm"
                 onClick={() => {
+                  const liveClientName = (newClientNameRef.current?.value ?? newClientName).trim();
+                  const liveClientPhone = (newClientPhoneRef.current?.value ?? newClientPhone).trim();
+                  const liveTotal = Number(newTotalRef.current?.value ?? newTotal) || 0;
+
                   if (!newSalleId) {
                     return toast.error("Veuillez sélectionner une salle.");
                   }
-                  if (!newClientName.trim()) {
+                  if (!liveClientName) {
                     return toast.error("Le nom du client est requis.");
                   }
                   saveMut.mutate(
@@ -1299,12 +1342,12 @@ function DashboardPage() {
                       event_time: newEventTime || null,
                       event_end_time: newEventEndTime || null,
                       cooking_lab_id: newCookingLabId,
-                      client_name: newClientName.trim(),
-                      client_phone: newClientPhone.trim() || null,
+                      client_name: liveClientName,
+                      client_phone: liveClientPhone || null,
                       id_card_number: newIdCardNumber.trim() || null,
                       id_card_status: newIdCardStatus,
                       status: newStatus,
-                      total_amount: Number(newTotal) || 0,
+                      total_amount: liveTotal,
                       note: newNote.trim() || null,
                     } as never,
                     {

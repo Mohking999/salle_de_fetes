@@ -2,7 +2,7 @@
 
 export const Route = createFileRoute("/")({
   beforeLoad: async () => {
-    throw redirect({ to: "/auth" });
+    throw redirect({ to: "/dashboard" });
   },
   component: () => null,
 });
