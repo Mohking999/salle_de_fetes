@@ -1,5 +1,17 @@
 # Salle des Fêtes — Calendrier & Réservations
 
+## Offline Electron licensing
+
+The Electron build requires a signed license before it opens the reservation
+interface. License verification runs in Electron's main process and uses an
+Ed25519 public key; the renderer only submits a key through the restricted
+preload IPC bridge. The repository and customer build contain only the public
+verification key; private signing material and license-generation tools are
+kept out of version control.
+
+Run the focused signature, expiry, and persistence tests with
+`npm run test:license`.
+
 ## Version Windows hors-ligne
 
 Cette version est une application Desktop Electron autonome. Les réservations,

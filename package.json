@@ -15,6 +15,7 @@
     "dist:portable": "npm run build && electron-builder --win portable --x64",
     "electron:package": "npm run dist",
     "electron:build:dir": "npm run build && electron-builder --dir --win --x64",
+    "test:license": "node --test electron/license.test.cjs",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -103,7 +104,12 @@
       "buildResources": "build"
     },
     "files": [
-      "electron/**/*",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/database.cjs",
+      "electron/license.cjs",
+      "electron/license-public.pem",
+      "electron/icon.ico",
       "build/renderer/**/*",
       "package.json"
     ],
@@ -114,7 +120,10 @@
     "win": {
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     },
     "nsis": {
       "oneClick": false,

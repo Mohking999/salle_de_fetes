@@ -2,4 +2,11 @@ node_modules/
 dist/
 .output/
 dist-electron/
+dist-license-admin/
 build/renderer/
+.license-admin/
+*.private.pem
+*private*.pem
+/electron-builder.admin.cjs
+/electron/license-admin-app/
+/scripts/license-admin.cjs
