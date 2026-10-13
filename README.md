@@ -105,7 +105,7 @@ Le build web utilise Nitro `node-server` en local et son preset Vercel pendant l
 
 ### Déploiement Vercel
 
-Importe le dépôt dans Vercel en gardant le répertoire racine à `.`. La commande de build est définie dans `vercel.json`; Vercel utilisera `npm run build:web`.
+Importe le dépôt dans Vercel en gardant le répertoire racine à `.`. Les commandes d'installation et de build sont définies dans `vercel.json`; Vercel utilisera `npm ci --ignore-scripts` (sans les scripts natifs réservés à Electron), puis `npm run build:web`.
 
 **Important :** sans le pont de base de données Electron, la version web utilise actuellement `localStorage` dans le navigateur. Les réservations ne sont donc ni partagées entre visiteurs ni stockées sur un serveur. Avant d'utiliser le site pour des réservations réelles, connecte un backend persistant et configure son authentification et ses règles d'accès.
 
