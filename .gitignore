@@ -4,6 +4,9 @@ dist/
 dist-electron/
 dist-license-admin/
 build/renderer/
+.vercel/
+.env*
+!.env.example
 .license-admin/
 *.private.pem
 *private*.pem
