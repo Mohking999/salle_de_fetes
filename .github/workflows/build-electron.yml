@@ -2,7 +2,7 @@ name: Build Electron App
 
 on:
   push:
-    branches: [main]
+    branches: [main, safe-publish]
     tags: ["v*"]
 
 permissions:
@@ -72,5 +72,33 @@ jobs:
                   "content-type": "application/octet-stream",
                   "content-length": data.length,
                 },
+              });
+            }
+
+      - name: Remove pre-release installer from v1.1.0
+        if: github.ref == 'refs/heads/safe-publish'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: "v1.1.0",
+            });
+            const { data: assets } = await github.rest.repos.listReleaseAssets({
+              owner,
+              repo,
+              release_id: release.id,
+              per_page: 100,
+            });
+            const staleAsset = assets.find(
+              (asset) => asset.name === "Salle.des.Fetes.1.0.0.exe",
+            );
+            if (staleAsset) {
+              await github.rest.repos.deleteReleaseAsset({
+                owner,
+                repo,
+                asset_id: staleAsset.id,
               });
             }
