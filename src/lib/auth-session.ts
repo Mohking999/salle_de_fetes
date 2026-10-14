@@ -1,4 +1,5 @@
 export const AUTH_USER_KEY = "auth_user";
+const MAX_SESSION_AGE_MS = 1000 * 60 * 60 * 24 * 180;
 
 type AuthUser = {
   email: string;
@@ -69,11 +70,20 @@ export function readAuthSession(): AuthUser | null {
       typeof parsed.signature !== "string" ||
       !parsed.signature.trim()
     ) {
+      clearAuthSession();
+      return null;
+    }
+
+    const now = Date.now();
+    const ageMs = now - parsed.authenticatedAt;
+    if (ageMs < 0 || ageMs > MAX_SESSION_AGE_MS) {
+      clearAuthSession();
       return null;
     }
 
     const expectedSignature = createSessionSignature(parsed.email, parsed.authenticatedAt);
     if (!expectedSignature || expectedSignature !== parsed.signature.trim()) {
+      clearAuthSession();
       return null;
     }
 
@@ -87,6 +97,7 @@ export function readAuthSession(): AuthUser | null {
       signature: parsed.signature.trim(),
     };
   } catch {
+    clearAuthSession();
     return null;
   }
 }
@@ -97,9 +108,18 @@ export function writeAuthSession(email: string, name?: string) {
   const normalizedEmail = email.trim();
   if (!normalizedEmail) return;
 
+  const { isConfigured } = getConfiguredAdminCredentials();
+  if (!isConfigured) {
+    clearAuthSession();
+    return;
+  }
+
   const authenticatedAt = Date.now();
   const signature = createSessionSignature(normalizedEmail, authenticatedAt);
-  if (!signature) return;
+  if (!signature) {
+    clearAuthSession();
+    return;
+  }
 
   const payload: AuthUser = {
     email: normalizedEmail,
