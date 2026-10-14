@@ -13,7 +13,12 @@ import {
 import { Crown, Eye, EyeOff } from "lucide-react";
 import { useDarkMode } from "@/routes/__root";
 import { Moon, Sun } from "lucide-react";
-import { readAuthSession, writeAuthSession } from "@/lib/auth-session";
+import {
+  getConfiguredAdminCredentials,
+  readAuthSession,
+  validateCredentials,
+  writeAuthSession,
+} from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -46,12 +51,24 @@ function AuthPage() {
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     const normalizedEmail = email.trim();
-    if (!normalizedEmail || !password.trim()) {
+    const trimmedPassword = password.trim();
+    if (!normalizedEmail || !trimmedPassword) {
+      return;
+    }
+
+    const { isConfigured } = getConfiguredAdminCredentials();
+    if (!isConfigured) {
+      alert("Aucun identifiant administrateur n’est configuré. Vérifiez les variables d’environnement.");
       return;
     }
 
     setLoading(true);
     try {
+      if (!validateCredentials(normalizedEmail, trimmedPassword)) {
+        alert("Identifiants incorrects.");
+        return;
+      }
+
       writeAuthSession(normalizedEmail, normalizedEmail.split("@")[0] || "Gestionnaire");
       navigate({ to: "/dashboard", replace: true });
     } finally {
