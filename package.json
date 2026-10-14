@@ -1,6 +1,6 @@
 {
   "name": "salle-des-fetes",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "private": true,
   "description": "Salle des Fêtes - Gestion des réservations",
   "author": "Salle des Fêtes",
@@ -10,11 +10,13 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173",
     "build": "vite build --config vite.desktop.config.ts",
+    "build:web": "vite build --config vite.config.ts",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "dist": "npm run build && electron-builder --win --x64",
     "dist:portable": "npm run build && electron-builder --win portable --x64",
     "electron:package": "npm run dist",
     "electron:build:dir": "npm run build && electron-builder --dir --win --x64",
+    "test:license": "node --test electron/license.test.cjs",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -49,7 +51,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-router": "^1.170.16",
-    "@tanstack/react-start": "^1.168.26",
+    "@tanstack/react-start": "^1.169.1",
     "@tanstack/router-plugin": "^1.168.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -103,7 +105,12 @@
       "buildResources": "build"
     },
     "files": [
-      "electron/**/*",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/database.cjs",
+      "electron/license.cjs",
+      "electron/license-public.pem",
+      "electron/icon.ico",
       "build/renderer/**/*",
       "package.json"
     ],
@@ -114,7 +121,10 @@
     "win": {
       "icon": "build/icon.ico",
       "signAndEditExecutable": false,
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     },
     "nsis": {
       "oneClick": false,

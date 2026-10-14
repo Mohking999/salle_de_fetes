@@ -1,5 +1,17 @@
 # Salle des Fêtes — Calendrier & Réservations
 
+## Offline Electron licensing
+
+The Electron build requires a signed license before it opens the reservation
+interface. License verification runs in Electron's main process and uses an
+Ed25519 public key; the renderer only submits a key through the restricted
+preload IPC bridge. The repository and customer build contain only the public
+verification key; private signing material and license-generation tools are
+kept out of version control.
+
+Run the focused signature, expiry, and persistence tests with
+`npm run test:license`.
+
 ## Version Windows hors-ligne
 
 Cette version est une application Desktop Electron autonome. Les réservations,
@@ -85,11 +97,17 @@ npm run dev
 ## Build & lancement en production
 
 ```sh
-npm run build
-npm start          # sert le build Node depuis .output/server/index.mjs
+npm run build:web  # build SSR web pour un déploiement Node/Vercel
+node .output/server/index.mjs  # lance le build web localement
 ```
 
-Par défaut le build cible Nitro `node-server` (tourne sur n'importe quel hébergeur Node). Pour déployer sur Cloudflare Workers à la place, change le preset dans `vite.config.ts` en `cloudflare-module` (le format `fetch(request, env, ctx)` de `src/server.ts` est déjà compatible) et ajoute ta config Wrangler.
+Le build web utilise Nitro `node-server` en local et son preset Vercel pendant les builds Vercel. `vercel.json` sélectionne `npm run build:web`; le build Electron reste séparé dans `npm run build`.
+
+### Déploiement Vercel
+
+Importe le dépôt dans Vercel en gardant le répertoire racine à `.`. Les commandes d'installation et de build sont définies dans `vercel.json`; Vercel utilisera `npm ci --ignore-scripts` (sans les scripts natifs réservés à Electron), puis `npm run build:web`.
+
+**Important :** sans le pont de base de données Electron, la version web utilise actuellement `localStorage` dans le navigateur. Les réservations ne sont donc ni partagées entre visiteurs ni stockées sur un serveur. Avant d'utiliser le site pour des réservations réelles, connecte un backend persistant et configure son authentification et ses règles d'accès.
 
 ## Structure
 

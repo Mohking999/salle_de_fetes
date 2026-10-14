@@ -6,10 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 // Plain Vite config — no more @lovable.dev/vite-tanstack-config wrapper.
-// Defaults to Nitro's "node-server" preset (runs anywhere with `node .output/server/index.mjs`
-// after `npm run build`). To deploy to Cloudflare Workers instead, change the preset below to
-// "cloudflare-module" (src/server.ts's `fetch(request, env, ctx)` export already matches that
-// format) and add the relevant wrangler config.
+// Vercel sets VERCEL during builds, so Nitro emits its Vercel functions there;
+// local web builds keep the portable node-server output.
 export default defineConfig({
   plugins: [
     tsConfigPaths(),
@@ -17,7 +15,7 @@ export default defineConfig({
     tanstackStart(),
     // react's vite plugin must come after start's vite plugin
     viteReact(),
-    nitro({ preset: "node-server" }),
+    nitro({ preset: process.env.VERCEL ? "vercel" : "node-server" }),
   ],
   environments: {
     ssr: {

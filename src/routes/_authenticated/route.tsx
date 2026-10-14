@@ -16,12 +16,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDarkMode } from "@/routes/__root";
+import { readAuthSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const user = localStorage.getItem("auth_user") ?? JSON.stringify({ email: "demo@local", name: "Demo" });
-    return { user: JSON.parse(user) };
+    const session = readAuthSession();
+    if (!session) {
+      throw redirect({ to: "/auth" });
+    }
+    return { user: session };
   },
   component: AuthenticatedLayout,
 });

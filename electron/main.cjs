@@ -2,16 +2,29 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { LocalDatabase } = require("./database.cjs");
+const { createLicenseService } = require("./license.cjs");
 
 let mainWindow;
 let database;
+let licenseService;
 
 function appDataPath() {
   // Keep mutable data out of the install directory and source project.
-  return path.join(process.env.LOCALAPPDATA || app.getPath("userData"), "Salle des Fêtes");
+  return path.join(
+    process.env.LOCALAPPDATA || app.getPath("userData"),
+    "Salle des Fêtes",
+  );
 }
 
 function registerIpc() {
+  function requireActiveLicense() {
+    if (licenseService.status().status !== "active") {
+      throw new Error(
+        "A valid active license is required to use this application.",
+      );
+    }
+  }
+
   const operations = {
     getManagerMonth: (data) => database.month(data),
     getRevenue: (data) => database.revenue(data),
@@ -25,39 +38,60 @@ function registerIpc() {
     addRemise: (data) => database.addRemise(data),
   };
   ipcMain.handle("offline-db:call", (_event, operation, data) => {
-    if (!Object.hasOwn(operations, operation)) throw new Error("Opération locale non autorisée.");
+    requireActiveLicense();
+    if (!Object.hasOwn(operations, operation))
+      throw new Error("Opération locale non autorisée.");
     return operations[operation](data || {});
   });
   ipcMain.handle("offline-db:backup", async () => {
-    const fallback = path.join(database.paths.backups, `salle-des-fetes-${new Date().toISOString().slice(0, 10)}.db`);
+    requireActiveLicense();
+    const fallback = path.join(
+      database.paths.backups,
+      `salle-des-fetes-${new Date().toISOString().slice(0, 10)}.db`,
+    );
     const result = await dialog.showSaveDialog(mainWindow, {
       title: "Enregistrer la sauvegarde",
       defaultPath: fallback,
-      filters: [{ name: "Base de données SQLite", extensions: ["db", "sqlite"] }],
+      filters: [
+        { name: "Base de données SQLite", extensions: ["db", "sqlite"] },
+      ],
     });
     if (result.canceled || !result.filePath) return { canceled: true };
     database.backup(result.filePath);
     return { canceled: false, filePath: result.filePath };
   });
   ipcMain.handle("offline-db:restore", async (_event, confirmed) => {
+    requireActiveLicense();
     if (!confirmed) throw new Error("La restauration doit être confirmée.");
     const result = await dialog.showOpenDialog(mainWindow, {
       title: "Choisir une sauvegarde à restaurer",
       properties: ["openFile"],
-      filters: [{ name: "Base de données SQLite", extensions: ["db", "sqlite"] }],
+      filters: [
+        { name: "Base de données SQLite", extensions: ["db", "sqlite"] },
+      ],
     });
     if (result.canceled || !result.filePaths[0]) return { canceled: true };
     const source = result.filePaths[0];
-    if (!fs.statSync(source).isFile()) throw new Error("Fichier de sauvegarde invalide.");
+    if (!fs.statSync(source).isFile())
+      throw new Error("Fichier de sauvegarde invalide.");
     database.restore(source);
     return { canceled: false };
   });
-  ipcMain.handle("offline-db:open-data-folder", () => shell.openPath(database.paths.root));
+  ipcMain.handle("offline-db:open-data-folder", () =>
+    shell.openPath(database.paths.root),
+  );
+  ipcMain.handle("license:status", () => licenseService.status());
+  ipcMain.handle("license:activate", (_event, serialKey) =>
+    licenseService.activate(serialKey),
+  );
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280, height: 900, minWidth: 1024, minHeight: 768,
+    width: 1280,
+    height: 900,
+    minWidth: 1024,
+    minHeight: 768,
     title: "Salle des Fêtes",
     icon: path.join(__dirname, "icon.ico"),
     webPreferences: {
@@ -78,9 +112,17 @@ function createWindow() {
 app.whenReady().then(() => {
   app.setAppUserModelId("com.salle-des-fetes.app");
   database = new LocalDatabase(appDataPath());
+  licenseService = createLicenseService(
+    path.join(database.paths.settings, "license.json"),
+    path.join(__dirname, "license-public.pem"),
+  );
   registerIpc();
   createWindow();
-  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
-app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
 app.on("before-quit", () => database?.close());
