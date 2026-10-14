@@ -6,7 +6,7 @@ const APP_ID = "com.salle-des-fetes.app";
 const LICENSE_FORMAT = "sdf1";
 
 function decodeLicense(serialKey) {
-  if (typeof serialKey !== "string" || serialKey.length > 4096) {
+  if (typeof serialKey !== "string" || serialKey.trim().length === 0 || serialKey.length > 4096) {
     throw new Error("The license key is not valid.");
   }
   const parts = serialKey.trim().split(".");
@@ -23,6 +23,9 @@ function decodeLicense(serialKey) {
   try {
     payload = JSON.parse(payloadBytes.toString("utf8"));
   } catch {
+    throw new Error("The license key payload is not valid.");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("The license key payload is not valid.");
   }
   return { payload, payloadBytes, signature };
@@ -56,7 +59,7 @@ function verifyLicense(serialKey, publicKey, now = Date.now()) {
   if (payload.type !== "lifetime" && payload.expiresAt === null) {
     throw new Error("This license is missing its expiration date.");
   }
-  if (payload.expiresAt !== null && now > Date.parse(payload.expiresAt)) {
+  if (payload.expiresAt !== null && now >= Date.parse(payload.expiresAt)) {
     throw new Error("This license has expired.");
   }
   return payload;
