@@ -1,0 +1,20 @@
+name: Export Dependabot Report
+on: workflow_dispatch # Allows you to run it manually from the Actions tab
+
+jobs:
+  export-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Export Dependabot Alerts to CSV
+        uses: jscutlery/dependabot-alert-export@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependabot-vulnerabilities
+          path: vulnerability.csv
