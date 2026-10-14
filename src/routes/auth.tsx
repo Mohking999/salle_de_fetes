@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +13,7 @@ import {
 import { Crown, Eye, EyeOff } from "lucide-react";
 import { useDarkMode } from "@/routes/__root";
 import { Moon, Sun } from "lucide-react";
+import { readAuthSession, writeAuthSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -38,27 +38,25 @@ function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
 
   useEffect(() => {
-    const user = localStorage.getItem("auth_user");
-    if (user) navigate({ to: "/dashboard", replace: true });
-    else {
-      localStorage.setItem(
-        "auth_user",
-        JSON.stringify({ email: "demo@local", name: "Demo" }),
-      );
+    if (readAuthSession()) {
       navigate({ to: "/dashboard", replace: true });
     }
   }, [navigate]);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail || !password.trim()) {
+      return;
+    }
 
-    localStorage.setItem(
-      "auth_user",
-      JSON.stringify({ email: email || "demo@local", name: "Demo" }),
-    );
-    setLoading(false);
-    navigate({ to: "/dashboard", replace: true });
+    setLoading(true);
+    try {
+      writeAuthSession(normalizedEmail, normalizedEmail.split("@")[0] || "Gestionnaire");
+      navigate({ to: "/dashboard", replace: true });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

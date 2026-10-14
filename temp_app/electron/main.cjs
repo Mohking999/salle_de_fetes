@@ -32,12 +32,12 @@ function createWindow() {
     try {
       const child = spawn(process.execPath, [serverEntry], {
         env: Object.assign({}, process.env, { PORT: String(port) }),
-        detached: true,
-        stdio: "ignore",
+        stdio: "inherit",
       });
-      child.unref();
+      child.on("error", (error) => {
+        console.error("Failed to spawn Nitro server:", error?.message || error);
+      });
     } catch (e) {
-      // fallback: continue — loadFile will fail if no index.html exists
       console.error("Failed to spawn Nitro server:", e && e.message);
     }
 

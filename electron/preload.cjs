@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("desktop", {
+const desktopApi = {
   database: {
     call: (operation, data) =>
       ipcRenderer.invoke("offline-db:call", operation, data),
@@ -13,4 +13,6 @@ contextBridge.exposeInMainWorld("desktop", {
     status: () => ipcRenderer.invoke("license:status"),
     activate: (serialKey) => ipcRenderer.invoke("license:activate", serialKey),
   },
-});
+};
+
+contextBridge.exposeInMainWorld("desktop", desktopApi);
